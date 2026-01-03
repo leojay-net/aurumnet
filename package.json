@@ -1,0 +1,32 @@
+{
+  "name": "aurumnet",
+  "version": "1.0.0",
+  "description": "AI-Managed Capital Infrastructure for Real-World and On-Chain Yield",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/aurumnet.git"
+  },
+  "keywords": [
+    "AI",
+    "capital management",
+    "DeFi",
+    "real-world assets",
+    "yield"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "ethers": "^5.0.0",
+    "hardhat": "^2.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^4.0.0",
+    "ts-node": "^10.0.0"
+  }
+}

@@ -37,6 +37,12 @@ AI_EXECUTOR_ADDRESS: str | None = os.getenv("AI_EXECUTOR_ADDRESS")
 AAVE_STRATEGY_ADDRESS: str | None = os.getenv("AAVE_STRATEGY_ADDRESS")
 RWA_STRATEGY_ADDRESS: str | None = os.getenv("RWA_STRATEGY_ADDRESS")
 
+# External protocol addresses (optional, but required for real APY reads)
+# AAVE_POOL_ADDRESS: address of Aave V3 Pool (or mock)
+# UNDERLYING_ASSET_ADDRESS: address of the asset supplied to Aave (e.g. USDC)
+AAVE_POOL_ADDRESS: str | None = os.getenv("AAVE_POOL_ADDRESS")
+UNDERLYING_ASSET_ADDRESS: str | None = os.getenv("UNDERLYING_ASSET_ADDRESS")
+
 if not all(
     [
         STRATEGY_MANAGER_ADDRESS,
@@ -46,7 +52,14 @@ if not all(
     ]
 ):
     # Only raise warning here as they might be set later or during simulation
-    print("WARNING: Some contract addresses are missing in environment variables.")
+    print("WARNING: Some core contract addresses are missing in environment variables.")
+
+if not all([AAVE_POOL_ADDRESS, UNDERLYING_ASSET_ADDRESS]):
+    # Aave APY will fall back to 0 if these are missing
+    print(
+        "WARNING: AAVE_POOL_ADDRESS or UNDERLYING_ASSET_ADDRESS is not set. "
+        "Aave APY will return 0."
+    )
 
 # Strategy Configuration
 REBALANCE_THRESHOLD_BPS: int = int(os.getenv("REBALANCE_THRESHOLD_BPS", 500))  # 5%

@@ -73,45 +73,77 @@ contract MockAavePool {
 }
 
 contract DeployAurumNet is Script {
+    struct DeploymentAddresses {
+        address mockUSDC;
+        address vaultCore;
+        address strategyManager;
+        address aiExecutor;
+        address rwaStrategy;
+        address aaveStrategy;
+        address mockAavePool;
+    }
+
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployer = vm.addr(deployerPrivateKey);
+        
+        // Get AI Agent address from env, default to deployer
+        address aiAgent = vm.envOr("AI_AGENT_ADDRESS", deployer);
+        
+        // Get USDC address from env (for testnet/mainnet), or deploy mock
+        address usdcAddress = vm.envOr("USDC_ADDRESS", address(0));
+        bool deployMockUSDC = usdcAddress == address(0);
+        
+        // Get Aave Pool address from env (for testnet/mainnet), or deploy mock
+        address aavePoolAddress = vm.envOr("AAVE_POOL_ADDRESS", address(0));
+        bool deployMockAavePool = aavePoolAddress == address(0);
 
         vm.startBroadcast(deployerPrivateKey);
 
-        // 1. Deploy Mock USDC (or use existing on testnet)
-        // For this script, we'll deploy a fresh one for demonstration
-        MockUSDC usdc = new MockUSDC();
-        console.log("MockUSDC deployed at:", address(usdc));
+        DeploymentAddresses memory addresses;
+
+        // 1. Deploy or use existing USDC
+        address usdc;
+        if (deployMockUSDC) {
+            MockUSDC mockUSDC = new MockUSDC();
+            usdc = address(mockUSDC);
+            addresses.mockUSDC = usdc;
+            console.log("MockUSDC deployed at:", usdc);
+        } else {
+            usdc = usdcAddress;
+            console.log("Using existing USDC at:", usdc);
+        }
 
         // 2. Deploy VaultCore
         VaultCore vault = new VaultCore(
-            address(usdc),
+            usdc,
             "AurumNet Vault",
             "AUR",
             deployer
         );
+        addresses.vaultCore = address(vault);
         console.log("VaultCore deployed at:", address(vault));
 
         // 3. Deploy StrategyManager
         StrategyManager strategyManager = new StrategyManager(
             address(vault),
-            address(usdc),
+            usdc,
             deployer
         );
+        addresses.strategyManager = address(strategyManager);
         console.log("StrategyManager deployed at:", address(strategyManager));
 
         // 4. Connect Vault to StrategyManager
         vault.setStrategyManager(address(strategyManager));
 
         // 5. Deploy AIExecutor
-        // Assuming the AI Agent address is the deployer for now, or a specific address
-        address aiAgent = deployer;
         AIExecutor aiExecutor = new AIExecutor(
             address(strategyManager),
             aiAgent
         );
+        addresses.aiExecutor = address(aiExecutor);
         console.log("AIExecutor deployed at:", address(aiExecutor));
+        console.log("AI Agent address:", aiAgent);
 
         // 6. Connect Vault to AIExecutor
         vault.setAIExecutor(address(aiExecutor));
@@ -125,7 +157,7 @@ contract DeployAurumNet is Script {
         // 8. Deploy Strategies
         // RWA Strategy
         RWAStrategy rwaStrategy = new RWAStrategy(
-            address(usdc),
+            usdc,
             address(vault),
             deployer,
             "Invoice #1234",
@@ -133,17 +165,27 @@ contract DeployAurumNet is Script {
             1000, // 10% APY
             30 days
         );
+        addresses.rwaStrategy = address(rwaStrategy);
         console.log("RWAStrategy deployed at:", address(rwaStrategy));
 
-        // Mock Aave Pool (Need a real or mock address for Aave Pool)
-        // For this script, we'll deploy a mock Aave pool
-        // In real deployment, use actual Aave Pool address
-        MockAavePool mockAavePool = new MockAavePool();
+        // Aave Pool and Strategy
+        address aavePool;
+        if (deployMockAavePool) {
+            MockAavePool mockAavePool = new MockAavePool();
+            aavePool = address(mockAavePool);
+            addresses.mockAavePool = aavePool;
+            console.log("MockAavePool deployed at:", aavePool);
+        } else {
+            aavePool = aavePoolAddress;
+            console.log("Using existing Aave Pool at:", aavePool);
+        }
+
         AaveStrategy aaveStrategy = new AaveStrategy(
-            address(usdc),
-            address(mockAavePool),
+            usdc,
+            aavePool,
             address(vault)
         );
+        addresses.aaveStrategy = address(aaveStrategy);
         console.log("AaveStrategy deployed at:", address(aaveStrategy));
 
         // 9. Add Strategies to Manager
@@ -151,5 +193,36 @@ contract DeployAurumNet is Script {
         strategyManager.addStrategy(address(aaveStrategy));
 
         vm.stopBroadcast();
+
+        // Save addresses to JSON file
+        saveAddresses(addresses);
+    }
+
+    function saveAddresses(DeploymentAddresses memory addresses) internal {
+        string memory json = "deployment-addresses.json";
+        string memory chainId = vm.toString(block.chainid);
+        
+        // Build JSON string manually for better compatibility
+        string memory jsonStr = "{";
+        jsonStr = string.concat(jsonStr, '"chainId": "', chainId, '",');
+        jsonStr = string.concat(jsonStr, '"VaultCore": "', vm.toString(addresses.vaultCore), '",');
+        jsonStr = string.concat(jsonStr, '"StrategyManager": "', vm.toString(addresses.strategyManager), '",');
+        jsonStr = string.concat(jsonStr, '"AIExecutor": "', vm.toString(addresses.aiExecutor), '",');
+        jsonStr = string.concat(jsonStr, '"RWAStrategy": "', vm.toString(addresses.rwaStrategy), '",');
+        jsonStr = string.concat(jsonStr, '"AaveStrategy": "', vm.toString(addresses.aaveStrategy), '"');
+        
+        if (addresses.mockUSDC != address(0)) {
+            jsonStr = string.concat(jsonStr, ',"MockUSDC": "', vm.toString(addresses.mockUSDC), '"');
+        }
+        if (addresses.mockAavePool != address(0)) {
+            jsonStr = string.concat(jsonStr, ',"MockAavePool": "', vm.toString(addresses.mockAavePool), '"');
+        }
+        
+        jsonStr = string.concat(jsonStr, "}");
+        
+        vm.writeJson(jsonStr, "./deployment-addresses.json");
+        
+        console.log("\n=== Deployment Summary ===");
+        console.log("Addresses saved to: deployment-addresses.json");
     }
 }

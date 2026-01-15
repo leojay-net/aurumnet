@@ -32,8 +32,8 @@ contract MockAavePool {
     function supply(
         address asset,
         uint256 amount,
-        address onBehalfOf,
-        uint16 referralCode
+        address /* onBehalfOf */,
+        uint16 /* referralCode */
     ) external {
         balances[asset] += amount;
     }
@@ -50,8 +50,8 @@ contract MockAavePool {
     }
 
     function getReserveData(
-        address asset
-    ) external view returns (IPool.ReserveData memory) {
+        address /* asset */
+    ) external pure returns (IPool.ReserveData memory) {
         return
             IPool.ReserveData({
                 configuration: 0,
@@ -86,14 +86,14 @@ contract DeployAurumNet is Script {
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployer = vm.addr(deployerPrivateKey);
-        
+
         // Get AI Agent address from env, default to deployer
         address aiAgent = vm.envOr("AI_AGENT_ADDRESS", deployer);
-        
+
         // Get USDC address from env (for testnet/mainnet), or deploy mock
         address usdcAddress = vm.envOr("USDC_ADDRESS", address(0));
         bool deployMockUSDC = usdcAddress == address(0);
-        
+
         // Get Aave Pool address from env (for testnet/mainnet), or deploy mock
         address aavePoolAddress = vm.envOr("AAVE_POOL_ADDRESS", address(0));
         bool deployMockAavePool = aavePoolAddress == address(0);
@@ -199,29 +199,63 @@ contract DeployAurumNet is Script {
     }
 
     function saveAddresses(DeploymentAddresses memory addresses) internal {
-        string memory json = "deployment-addresses.json";
         string memory chainId = vm.toString(block.chainid);
-        
+
         // Build JSON string manually for better compatibility
         string memory jsonStr = "{";
         jsonStr = string.concat(jsonStr, '"chainId": "', chainId, '",');
-        jsonStr = string.concat(jsonStr, '"VaultCore": "', vm.toString(addresses.vaultCore), '",');
-        jsonStr = string.concat(jsonStr, '"StrategyManager": "', vm.toString(addresses.strategyManager), '",');
-        jsonStr = string.concat(jsonStr, '"AIExecutor": "', vm.toString(addresses.aiExecutor), '",');
-        jsonStr = string.concat(jsonStr, '"RWAStrategy": "', vm.toString(addresses.rwaStrategy), '",');
-        jsonStr = string.concat(jsonStr, '"AaveStrategy": "', vm.toString(addresses.aaveStrategy), '"');
-        
+        jsonStr = string.concat(
+            jsonStr,
+            '"VaultCore": "',
+            vm.toString(addresses.vaultCore),
+            '",'
+        );
+        jsonStr = string.concat(
+            jsonStr,
+            '"StrategyManager": "',
+            vm.toString(addresses.strategyManager),
+            '",'
+        );
+        jsonStr = string.concat(
+            jsonStr,
+            '"AIExecutor": "',
+            vm.toString(addresses.aiExecutor),
+            '",'
+        );
+        jsonStr = string.concat(
+            jsonStr,
+            '"RWAStrategy": "',
+            vm.toString(addresses.rwaStrategy),
+            '",'
+        );
+        jsonStr = string.concat(
+            jsonStr,
+            '"AaveStrategy": "',
+            vm.toString(addresses.aaveStrategy),
+            '"'
+        );
+
         if (addresses.mockUSDC != address(0)) {
-            jsonStr = string.concat(jsonStr, ',"MockUSDC": "', vm.toString(addresses.mockUSDC), '"');
+            jsonStr = string.concat(
+                jsonStr,
+                ',"MockUSDC": "',
+                vm.toString(addresses.mockUSDC),
+                '"'
+            );
         }
         if (addresses.mockAavePool != address(0)) {
-            jsonStr = string.concat(jsonStr, ',"MockAavePool": "', vm.toString(addresses.mockAavePool), '"');
+            jsonStr = string.concat(
+                jsonStr,
+                ',"MockAavePool": "',
+                vm.toString(addresses.mockAavePool),
+                '"'
+            );
         }
-        
+
         jsonStr = string.concat(jsonStr, "}");
-        
+
         vm.writeJson(jsonStr, "./deployment-addresses.json");
-        
+
         console.log("\n=== Deployment Summary ===");
         console.log("Addresses saved to: deployment-addresses.json");
     }

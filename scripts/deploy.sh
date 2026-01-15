@@ -11,6 +11,22 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 CONTRACTS_DIR="$PROJECT_ROOT/contracts"
 
+# Load environment variables from .env files if present
+# This allows PRIVATE_KEY, MANTLE_TESTNET_RPC, etc. to be defined in .env
+if [ -f "$PROJECT_ROOT/.env" ]; then
+  set -a
+  # shellcheck disable=SC1090
+  . "$PROJECT_ROOT/.env"
+  set +a
+fi
+
+if [ -f "$CONTRACTS_DIR/.env" ]; then
+  set -a
+  # shellcheck disable=SC1090
+  . "$CONTRACTS_DIR/.env"
+  set +a
+fi
+
 NETWORK=${1:-local}
 VERIFY=false
 
@@ -57,7 +73,7 @@ case $NETWORK in
         exit 1
     fi
     
-    RPC_URL="${MANTLE_TESTNET_RPC:-https://rpc.testnet.mantle.xyz}"
+    RPC_URL="$MANTLE_TESTNET_RPC"
     ETHERSCAN_API_KEY="${ETHERSCAN_API_KEY:-}"
     ;;
     

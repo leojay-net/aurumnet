@@ -18,11 +18,21 @@ case $NETWORK in
     ;;
   testnet)
     RPC_URL="${MANTLE_TESTNET_RPC:-https://rpc.testnet.mantle.xyz}"
-    ADDRESSES_FILE="$PROJECT_ROOT/contracts/deployment-addresses-testnet.json"
+    # Prefer network-specific file if it exists, otherwise fall back to generic
+    if [ -f "$PROJECT_ROOT/contracts/deployment-addresses-testnet.json" ]; then
+      ADDRESSES_FILE="$PROJECT_ROOT/contracts/deployment-addresses-testnet.json"
+    else
+      ADDRESSES_FILE="$PROJECT_ROOT/contracts/deployment-addresses.json"
+    fi
     ;;
   mainnet)
     RPC_URL="${MANTLE_MAINNET_RPC:-https://rpc.mantle.xyz}"
-    ADDRESSES_FILE="$PROJECT_ROOT/contracts/deployment-addresses-mainnet.json"
+    # Prefer network-specific file if it exists, otherwise fall back to generic
+    if [ -f "$PROJECT_ROOT/contracts/deployment-addresses-mainnet.json" ]; then
+      ADDRESSES_FILE="$PROJECT_ROOT/contracts/deployment-addresses-mainnet.json"
+    else
+      ADDRESSES_FILE="$PROJECT_ROOT/contracts/deployment-addresses.json"
+    fi
     ;;
   *)
     echo "Unknown network: $NETWORK"
